@@ -1,11 +1,10 @@
-<div class="login">
+<div class="content" id="login">
 
-    
     <?php 
     
     if(isset($_SESSION["loggedIn"])){
         echo '
-    <h1>Already logged in</h1>
+    <div><h1>Already logged in</h1>
    <p>  <a href="main.php?goTo=logout">Log out</a></p>
 </div>
 ';

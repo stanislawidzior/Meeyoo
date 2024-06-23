@@ -17,7 +17,7 @@ class DbClass {
             
         }
     }
-    public static function getUserMessagesFindByEmail($email){
+    public static function getUserMessagesFindByEmail($email,$limit,$offset){ //editededited
         if(!self::valid("email",$email)){
             return false;
         }
@@ -25,7 +25,34 @@ class DbClass {
             return false;
         }
         $id = $user["id"];
-        $statement = self::$db->prepare("SELECT message_id,receiver_id,sender_id,message_content,sent_at,read_at FROM messages WHERE receiver_id = :id");
+        $statement = self::$db->prepare("SELECT message_id, receiver_id, sender_id, message_content, sent_at, read_at 
+        FROM messages WHERE receiver_id = :id  OR sender_id = :id ORDER BY sent_at DESC LIMIT :limit OFFSET :offset");
+        $statement->bindParam(':id', $id, PDO::PARAM_INT);
+        $statement->bindParam(':limit', $limit, PDO::PARAM_INT);
+        $statement->bindParam(':offset', $offset, PDO::PARAM_INT);
+        try{
+            self::$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+                self::$db->beginTransaction();
+            $statement->execute();
+            $messages = $statement->fetchAll(PDO::FETCH_ASSOC);
+          self::$db->commit();
+        }catch (Exception $error) {
+            self::$db->rollBack();
+            echo "Transaction not completed: " . $error->getMessage();
+        }
+        if(isset($messages) && $messages !== false && $messages !== null){
+        return $messages;
+        }else{return false;}
+    }
+    public static function getUserSentMessagesFindByEmail($email){
+        if(!self::valid("email",$email)){
+            return false;
+        }
+        if (($user = self::getUserIdByEmail($email)) === false) {
+            return false;
+        }
+        $id = $user["id"];
+        $statement = self::$db->prepare("SELECT message_id,receiver_id,sender_id,message_content,sent_at,read_at FROM messages WHERE sender_id = :id");
         $statement->bindParam(':id', $id, PDO::PARAM_INT);
         try{
             self::$db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
@@ -41,6 +68,7 @@ class DbClass {
         return $messages;
         }else{return false;}
     }
+    
     private static function valid($type, $value) {
         switch ($type) {
             case "email":
@@ -130,6 +158,48 @@ class DbClass {
             return false;
         }
     }
+    public static function getUserFriendListById($id) {
+        if (!self::valid("int", $id)) {
+            return false;
+        }   if(!(self::getUserEmailById($id))) 
+        {
+            return false;
+        }
+
+        try {
+            $statement = self::$db->prepare("SELECT friend_id FROM friends_list WHERE user_id = :id");
+            $statement->bindParam(":id", $id, PDO::PARAM_INT);
+            $statement->execute();
+            $result = $statement->fetch(PDO::FETCH_ASSOC);
+            return $result ? $result : false;
+        } catch (PDOException $error) {
+            echo "Task not completed: " . $error->getMessage();
+            return false;
+        }
+    }
+    public static function addToFriendListById($id,$id2) {
+        if (self::valid("int", $id)&&self::valid("int", $id)) {
+            return false;
+        }
+        if(!(self::getUserEmailById($id) && self::getUserEmailById($id2))) 
+        {
+            return false;
+        }
+        try {
+            $statement = self::$db->prepare("INSERT INTO `friends_list` (`user_id`, `friend_id`) 
+                                             VALUES (:id, :id2),(:id2, :id)");
+            $statement->bindParam(':id', $id, PDO::PARAM_INT);
+            $statement->bindParam(':id', $id2, PDO::PARAM_INT);
+            self::$db->beginTransaction();
+            $statement->execute();
+            self::$db->commit();
+            return true;
+        } catch (Exception $error) {
+            self::$db->rollBack();
+            echo "Transaction not completed: " . $error->getMessage();
+            return false;
+        }
+    }
 
     public static function deleteUserFindByEmail($email) {
         $userId = self::getUserIdByEmail($email);
@@ -195,6 +265,22 @@ class DbClass {
             return false;
         }
     }
+    public static function getUserEmailById($id) {
+        if (!self::valid("int", $id)) {
+            return false;
+        }
+
+        try {
+            $statement = self::$db->prepare("SELECT email FROM user WHERE id = :id");
+            $statement->bindParam(":id", $id, PDO::PARAM_INT);
+            $statement->execute();
+            $result = $statement->fetch(PDO::FETCH_ASSOC);
+            return $result ? $result["email"] : false;
+        } catch (PDOException $error) {
+            echo "Task not completed: " . $error->getMessage();
+            return false;
+        }
+    }
     public static function getUserInfoById($id) {
         if (!self::valid("int", $id)) {
             return false;
@@ -202,7 +288,7 @@ class DbClass {
 
         try {
             $statement = self::$db->prepare("SELECT * FROM user WHERE id = :id");
-            $statement->bindParam(":id", $id, PDO::PARAM_STR);
+            $statement->bindParam(":id", $id, PDO::PARAM_INT);
             $statement->execute();
             $result = $statement->fetch(PDO::FETCH_ASSOC);
             return $result ? $result : false;
@@ -212,7 +298,7 @@ class DbClass {
         }
     }
 
-    public static function sendMessageFindByEmail($from, $to, $message) {
+    public static function sendMessageFindByEmail($from, $to, $message,$type = "none") { //edited edited edit update updated type added
         if (!(self::valid("email", $from) && self::valid("email", $to))) {
             return false;
         }
@@ -228,13 +314,15 @@ class DbClass {
         }
 
         try {
-            $statement = self::$db->prepare("INSERT INTO `messages` (`sender_id`, `receiver_id`, `message_content`)
-                                             SELECT u1.`id` AS `sender_id`, u2.`id` AS `receiver_id`, :mess AS `message_content`
-                                             FROM `user` AS u1
-                                             JOIN `user` AS u2 ON u1.`email` = :from AND u2.`email` = :to");
+            $statement = self::$db->prepare("INSERT INTO `messages` (`sender_id`, `receiver_id`, `message_content`, `type`)
+            SELECT u1.`id` AS `sender_id`, u2.`id` AS `receiver_id`, :mess AS `message_content`, :type AS `type`
+            FROM `user` AS u1
+            JOIN `user` AS u2 ON u1.`email` = :from AND u2.`email` = :to;");
             $statement->bindParam(':from', $from, PDO::PARAM_STR);
             $statement->bindParam(':to', $to, PDO::PARAM_STR);
             $statement->bindParam(':mess', $message, PDO::PARAM_STR);
+            $statement->bindParam(':mess', $message, PDO::PARAM_STR);
+            $statement->bindParam(':type', $type, PDO::PARAM_STR);
             self::$db->beginTransaction();
             $statement->execute();
             self::$db->commit();
@@ -323,7 +411,22 @@ class DbClass {
             return false;
         }
     }
+    public static function getUserFriendsById($id){
+        if (!self::valid("int", $id)) {
+            return false;
+        }
 
+        try {
+            $statement = self::$db->prepare("SELECT * FROM friends_list WHERE user_id = :id");
+            $statement->bindParam(":id", $id, PDO::PARAM_INT);
+            $statement->execute();
+            $result = $statement->fetch(PDO::FETCH_ASSOC);
+            return $result ? $result : false;
+        } catch (PDOException $error) {
+            echo "Task not completed: " . $error->getMessage();
+            return false;
+        }
+    }
 }
 
 

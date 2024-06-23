@@ -5,7 +5,7 @@ function replaceNull(&$value, $key) {
         $value = 'none';
     }
 }
-class DbUser{   
+ class DbUser{   
     private int $id;
     private string $name;
     private string $surname;
@@ -203,29 +203,6 @@ public function checkIfInDb(){
         return false;
 }
 return true;
-}
-public function sendMessage($to, $message){
-           if(!isset($this->id)){
-            return false;
-           }
-    try{
-        !DbClass::init();
-        DbClass::sendMessageFindByEmail($this->email, $to, $message);
-    }catch(Exception $e){
-        return false;
-    }
-    
-}
-public function getUsersMessages(){
-    if(!isset($this->id)){
-        return false;
-       }
-       try{
-        DbClass::init();
-    return DbClass::getUserMessagesFindByEmail($this->email);
-       }catch( Exception $e){
-        return false;
-       }
 }
 }
 

@@ -8,6 +8,9 @@
     include("header.php");
     if(isset($_POST["type"])){
         switch($_POST["type"]){
+            case "message":
+                $_SESSION["message"] = $_POST["message"];
+                break;
             case "login":
                 require("validateLogin.php");
                 exit();
@@ -21,14 +24,21 @@
     }
     
     
-    if( isset($_GET["goTo"])){
+    if( isset($_GET["goTo"])){ // zastanow sie czy nie powinienes unset robic roznych rzeczy ktore sa plikach ze switcha
+        if($_GET["goTo"]!=="message" && $_SESSION["goTo"] =="message"){
+            unset($_SESSION["messageTo"]);
+            unset( $_SESSION["messageOffset"]);
+        }
         $_SESSION["goTo"] = $_GET["goTo"];
         $goTo = $_SESSION["goTo"];
         if($_SESSION["goTo"] == "profile"){
             $_SESSION["profileId"]= $_GET["profileId"];
         }
-        if($_SESSION["goTo"] == "addFriend"){
-            $_SESSION["profileId"]= $_GET["profileId"];
+        else if($_SESSION["goTo"] == "addFriend"){
+            $_SESSION["profileId"] = $_GET["profileId"];
+        }
+        else if($_SESSION["goTo"] == "message"){
+            $_SESSION["messageTo"] = $_GET["messageTo"];
         }
     }else if(isset($_SESSION["goTo"])){
         $goTo = $_SESSION["goTo"];
@@ -37,6 +47,12 @@
     }
 
     switch ($goTo){
+        case "message":
+            require("message.php");
+            break;
+        case "listOfFriends":
+            require("listOfFriends.php");
+            break;
         case "addFriend":
             require("addFriend.php");
             break;

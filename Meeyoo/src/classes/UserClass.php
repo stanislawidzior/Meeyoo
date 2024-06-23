@@ -1,8 +1,10 @@
 <?php
 include("dbUserClass.php");
 class User extends dbUser{
+    private $friends;
   public function __construct($name = "none",$email = "none"){
     parent::__construct($name,$email);
+    $friends = [];
   }
     public function sendFriendInvite($to){
       
@@ -12,13 +14,11 @@ class User extends dbUser{
 
 
     }
-    public function acceptFriendInvite(){
-            $this->getUsersMessages();
-            foreach($this->getUsersMessages() as $message){
-                if($message == "Friend request"){
-                    
-                }
-            }
+    public function sendMessage($to, $message){
+        if(!isset($this->id)){
+            throw new Exception("User not in sync with db");
+        }
+        DbClass::sendMessageFindByEmail($this->id,$to,$message);
     }
  
     public function validateInput($arr){
@@ -59,6 +59,7 @@ class User extends dbUser{
     }
     return true;  
 }
+
 }
 //$arr = array("name"=>"","surname"=>"","email"=>"","age"=>12,""=>"none","password"=>"");
 //$user = new User("name","email@email.com");

@@ -20,6 +20,7 @@ CREATE TABLE `messages` (
     `sender_id` INT NOT NULL,
     `receiver_id` INT NOT NULL,
     `message_content` TEXT NOT NULL,
+    `type` VARCHAR(24),
     `sent_at` TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
     `read_at` TIMESTAMP NULL DEFAULT NULL,
     FOREIGN KEY (`sender_id`) REFERENCES `user`(`id`) ON DELETE CASCADE,

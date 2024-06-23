@@ -1,3 +1,4 @@
+<div class="content" id="profile">
 <div class="top">
 <div class="profilePicture">
 <?php echo '<img src="images/'.$_SESSION["profileId"].'/profile_picture.jpg" alt="image not found">' ?>
@@ -8,6 +9,8 @@
     <?php 
     if(isset($_SESSION['loggedIn']) &&($_SESSION["userId"] !== $_SESSION["profileId"])){
         echo '<a href="main.php?goTo=addFriend&friendId='.$_SESSION["profileId"].'">add friend</a>';
+    }if(isset($_SESSION['loggedIn']) && ($_SESSION['userId'] === $_SESSION['profileId'])){
+        echo '<a href="main.php?goTo=listOfFriends">list of friends</a>'; //Dodane dodane tez do main case
     }
     ?>
     
@@ -28,6 +31,7 @@
 </div>
 </div>
 <div class="posts"> POSTS</div>
-
+</div>
 <?php
+
  
